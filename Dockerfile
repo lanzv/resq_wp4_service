@@ -19,26 +19,6 @@ COPY ./requirements.txt .
 RUN /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate resq_wp4_service && pip install -r requirements.txt"
 
 
-# Stage 2: Runtime image
-FROM python:3.11-slim-bullseye
-
-# Copy files from build stage
-COPY --from=builder /opt/conda /opt/conda
-ENV PATH="/opt/conda/bin:${PATH}"
-
-# Initialize conda
-RUN /opt/conda/bin/conda init bash
-
-# Copy project files
-COPY ./resources /opt/resq_wp4_service/resources
-COPY ./src /opt/resq_wp4_service/src
-COPY ./app.py /opt/resq_wp4_service/app.py
-COPY ./gunicorn_logging.conf /opt/resq_wp4_service/logging.conf
-
-# Set working directory
-WORKDIR /opt/resq_wp4_service
-
-
 RUN mkdir -p /opt/models
 # Create the target directory
 RUN mkdir -p /opt/models/evidence_extraction
@@ -65,6 +45,26 @@ RUN wget -P /opt/models/answer_prediction \
     "https://ufallab.ms.mff.cuni.cz/~lanz/answer_prediction/tokenizer.json" \
     "https://ufallab.ms.mff.cuni.cz/~lanz/answer_prediction/tokenizer.model" \
     "https://ufallab.ms.mff.cuni.cz/~lanz/answer_prediction/tokenizer_config.json"
+
+# Stage 2: Runtime image
+FROM python:3.11-slim-bullseye
+
+# Copy files from build stage
+COPY --from=builder /opt/conda /opt/conda
+COPY --from=builder /opt/models /opt/models
+ENV PATH="/opt/conda/bin:${PATH}"
+
+# Initialize conda
+RUN /opt/conda/bin/conda init bash
+
+# Copy project files
+COPY ./resources /opt/resq_wp4_service/resources
+COPY ./src /opt/resq_wp4_service/src
+COPY ./app.py /opt/resq_wp4_service/app.py
+COPY ./gunicorn_logging.conf /opt/resq_wp4_service/logging.conf
+
+# Set working directory
+WORKDIR /opt/resq_wp4_service
 
 
 # Install Supervisord
