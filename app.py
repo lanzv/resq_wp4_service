@@ -67,9 +67,9 @@ app = FastAPI(
 
 logging.info("Loading NLP models ...")
 try:
-    ee_model = EvidenceExtractionModel(model_name = "/opt/saved_models/evidence_extraction")
+    ee_model = EvidenceExtractionModel(model_name = "/opt/models/evidence_extraction")
     logging.info("Evidence Extraction model was successfully loaded!")
-    ap_model = AnswerPredictionModel("/opt/saved_models/answer_prediction")
+    ap_model = AnswerPredictionModel("/opt/models/answer_prediction")
     logging.info("Answer Prediction model was successfully loaded!")
 except Exception as e:
     logging.error(f"Error loading MT model: {repr(e)}")
