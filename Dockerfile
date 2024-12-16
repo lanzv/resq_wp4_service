@@ -60,8 +60,9 @@ COPY ./gunicorn_logging.conf /opt/resq_wp4_service/logging.conf
 # Set working directory
 WORKDIR /opt/resq_wp4_service
 
-# Install Supervisord
-RUN apt-get update && apt-get install -y --no-install-recommends supervisor procps \
+# Install Supervisord, GCC and ps command
+RUN apt-get update && apt-get install -y build-essential \
+    && apt-get install -y --no-install-recommends supervisor procps \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Supervisord configuration

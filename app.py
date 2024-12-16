@@ -49,7 +49,7 @@ class AnswerPrediction(BaseModel):
     question_id: str
     question_confidence: float
     question_frequency: float
-    enumeration_value_id: Union[None, str, int, bool]
+    enumeration_value_id: Union[None, str, int, bool, float]
     prediction_confidence: float
 
 class AnswerPredictionResponse(BaseModel):
