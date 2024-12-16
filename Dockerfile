@@ -1,10 +1,12 @@
 # Stage 1: Build and setup environment
-FROM python:3.11-slim-bullseye as builder
+FROM nvidia/cuda:12.3.0-runtime-ubuntu20.04 as builder
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install basic tools and dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget bzip2 git build-essential cmake libreadline-dev libncurses5-dev zlib1g-dev libssl-dev \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    curl ca-certificates && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Miniconda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh \
@@ -18,13 +20,9 @@ RUN conda create -n resq_wp4_service python=3.11 && conda clean -afy
 COPY ./requirements.txt .
 RUN /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate resq_wp4_service && pip install -r requirements.txt"
 
-
-RUN mkdir -p /opt/models
-# Create the target directory
-RUN mkdir -p /opt/models/evidence_extraction
-
-# Download all files and save it to /opt/models/evidence_extraction
-RUN wget -P /opt/models/evidence_extraction \
+# Download all models and files
+RUN mkdir -p /opt/models/evidence_extraction && \
+    wget -P /opt/models/evidence_extraction \
     "https://ufallab.ms.mff.cuni.cz/~lanz/evidence_extraction/config.json" \
     "https://ufallab.ms.mff.cuni.cz/~lanz/evidence_extraction/model.safetensors" \
     "https://ufallab.ms.mff.cuni.cz/~lanz/evidence_extraction/special_tokens_map.json" \
@@ -32,12 +30,8 @@ RUN wget -P /opt/models/evidence_extraction \
     "https://ufallab.ms.mff.cuni.cz/~lanz/evidence_extraction/tokenizer_config.json" \
     "https://ufallab.ms.mff.cuni.cz/~lanz/evidence_extraction/vocab.txt"
 
-
-# Create the target directory
-RUN mkdir -p /opt/models/answer_prediction
-
-# Download Answer Prediction model and save it to /opt/models/answer_prediction
-RUN wget -P /opt/models/answer_prediction \
+RUN mkdir -p /opt/models/answer_prediction && \
+    wget -P /opt/models/answer_prediction \
     "https://ufallab.ms.mff.cuni.cz/~lanz/answer_prediction/config.json" \
     "https://ufallab.ms.mff.cuni.cz/~lanz/answer_prediction/generation_config.json" \
     "https://ufallab.ms.mff.cuni.cz/~lanz/answer_prediction/model.safetensors" \
@@ -47,7 +41,7 @@ RUN wget -P /opt/models/answer_prediction \
     "https://ufallab.ms.mff.cuni.cz/~lanz/answer_prediction/tokenizer_config.json"
 
 # Stage 2: Runtime image
-FROM python:3.11-slim-bullseye
+FROM nvidia/cuda:12.3.0-runtime-ubuntu20.04
 
 # Copy files from build stage
 COPY --from=builder /opt/conda /opt/conda
@@ -66,9 +60,8 @@ COPY ./gunicorn_logging.conf /opt/resq_wp4_service/logging.conf
 # Set working directory
 WORKDIR /opt/resq_wp4_service
 
-
 # Install Supervisord
-RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
+RUN apt-get update && apt-get install -y --no-install-recommends supervisor procps \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Supervisord configuration
@@ -97,7 +90,6 @@ RUN echo '#!/bin/bash\n' \
     | sed 's/^ //g' \
     > /opt/run_resq_wp4_service.sh
 RUN chmod +x /opt/run_resq_wp4_service.sh
-
 
 # Expose port
 EXPOSE 8081
