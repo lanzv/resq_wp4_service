@@ -3,7 +3,7 @@ from transformers import Trainer, TrainingArguments, DataCollatorForSeq2Seq, Sto
 from src.form.form_definition import FormDefinition
 from src.form.form_questions import FormQuestions
 from src.form.question_confidences import QuestionConfidences
-from .utils import load_model, generate_prompt, prompt_model, parse_output, generate_answer
+from .utils import load_model, generate_prompt, prompt_model, parse_output, generate_answer, ParsingError
 from datasets import Dataset
 from peft import LoraConfig, get_peft_model
 from functools import partial
@@ -71,7 +71,7 @@ class AnswerPredictionModel:
                     "question_id": prediction_question_ids[qaid],
                     "question_confidence": q_conf["question_confidence"],
                     "question_frequency": q_conf["question_frequency"],
-                    "enumeration_value_id": predictions[qaid],
+                    "enumeration_value_id": predictions[qaid] if not isinstance(predictions[qaid], ParsingError) else None,
                     "prediction_confidence": model_confidences[qaid]
                 }
             )
